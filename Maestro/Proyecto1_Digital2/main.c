@@ -16,7 +16,7 @@
 
 //Definición de direcciones 
 #define slave1R (0x30 << 1)| 0x01		//para leer
-#define slave1W (0x30 << 1)& ob11111110	//Para escribir
+#define slave1W (0x30 << 1)& 0b11111110	//Para escribir
 
 
 uint8_t direccion;
@@ -32,12 +32,12 @@ int main(void)
    setup();
     while (1) 
     {
-		if (!I2C_Start()) return;	// Iniciar el start, si no hay ningun problema, continua
+		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
 		
 		if (!I2C_Master_write(slave1W))	//si no devuelve 1 para la comunicación
 		{
 			I2C_Master_stop();
-			return;
+			return 0;
 		}
 		
 		I2C_Master_write('R');	//Comando para prepararlo
@@ -45,15 +45,15 @@ int main(void)
 		if (!I2C_repeatedStart())	//si está en el repeate start 
 		{	
 			I2C_Master_stop();
-			return;
+			return 0;
 		}
 			
 		if (!I2C_Master_write(slave1R)){	//SI todo corre bien le escribo al esclavo 
 			I2C_Master_stop();				// si no se da, paro la comunición
-			return;
+			return 0;
 		}
 		
-		I2C_Mater_read(&bufferI2C,0);	//NACK
+		I2C_Master_read(&bufferI2C,0);	//NACK
 		I2C_Master_stop();
 		
 		refreshPORT(bufferI2C);
@@ -62,6 +62,7 @@ int main(void)
 }
 
 void setup(){
+	cli();
 	//SALIDAS
 	DDRD |= (1<<DDD2)|(1<<DDD3)|(1<<DDD4)|(1<<DDD5)|(1<<DDD6)|(1<<DDD7);	//declarar el puerto D como salidas
 	PORTD = 0x00;	//Estado inicial apagado
@@ -72,6 +73,7 @@ void setup(){
 	PORTB = 0x00;	//Inicialmente apagado
 	
 	I2C_Master_Init(100000,1);
+	sei();
 }
 
 void refreshPORT(uint8_t VALOR){

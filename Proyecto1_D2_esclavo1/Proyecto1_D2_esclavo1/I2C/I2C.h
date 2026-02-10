@@ -31,7 +31,7 @@ uint8_t I2C_Master_write(uint8_t dato);
 
 //Función de recepción de datos enviados por el esclavo al maestro 
 //esta función es para leer los datos que estáne en el esclavo					
-uint8_t I2C_Master_read(uint8_t *buffer, uint8_t ack);
+uint8_t I2C_Mater_read(uint8_t buffer, uint8_t ack);
 
 //función para inicializar I2C esclavo
 void I2C_init_Slave(uint8_t address);

@@ -34,14 +34,16 @@ LINKER_SCRIPT_DEP:=
 # Every subdirectory with source files must be described here
 SUBDIRS :=  \
 ../I2C \
-../ADC
+../ADC \
+../UART
 
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS +=  \
 ../ADC/ADC.c \
 ../I2C/I2C.c \
-../main.c
+../main.c \
+../UART/UART.c
 
 
 PREPROCESSING_SRCS += 
@@ -53,26 +55,30 @@ ASM_SRCS +=
 OBJS +=  \
 ADC/ADC.o \
 I2C/I2C.o \
-main.o
+main.o \
+UART/UART.o
 
 OBJS_AS_ARGS +=  \
 ADC/ADC.o \
 I2C/I2C.o \
-main.o
+main.o \
+UART/UART.o
 
 C_DEPS +=  \
 ADC/ADC.d \
 I2C/I2C.d \
-main.d
+main.d \
+UART/UART.d
 
 C_DEPS_AS_ARGS +=  \
 ADC/ADC.d \
 I2C/I2C.d \
-main.d
+main.d \
+UART/UART.d
 
-OUTPUT_FILE_PATH +=Proyecto1_Digital2.elf
+OUTPUT_FILE_PATH +=Proyecto1_D2_esclavo1.elf
 
-OUTPUT_FILE_PATH_AS_ARGS +=Proyecto1_Digital2.elf
+OUTPUT_FILE_PATH_AS_ARGS +=Proyecto1_D2_esclavo1.elf
 
 ADDITIONAL_DEPENDENCIES:=
 
@@ -105,6 +111,13 @@ I2C/I2C.o: ../I2C/I2C.c
 	@echo Finished building: $<
 	
 
+UART/UART.o: ../UART/UART.c
+	@echo Building file: $<
+	@echo Invoking: AVR/GNU C Compiler : 5.4.0
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE)  -x c -funsigned-char -funsigned-bitfields -DDEBUG  -I"C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\include"  -Og -ffunction-sections -fdata-sections -fpack-struct -fshort-enums -g2 -Wall -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega328p" -c -std=gnu99 -MD -MP -MF "$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -MT"$(@:%.o=%.o)"   -o "$@" "$<" 
+	@echo Finished building: $<
+	
+
 
 
 
@@ -131,13 +144,13 @@ all: $(OUTPUT_FILE_PATH) $(ADDITIONAL_DEPENDENCIES)
 $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER_SCRIPT_DEP)
 	@echo Building target: $@
 	@echo Invoking: AVR/GNU Linker : 5.4.0
-	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -Wl,-Map="Proyecto1_Digital2.map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega328p"  
+	$(QUOTE)C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-gcc.exe$(QUOTE) -o$(OUTPUT_FILE_PATH_AS_ARGS) $(OBJS_AS_ARGS) $(USER_OBJS) $(LIBS) -Wl,-Map="Proyecto1_D2_esclavo1.map" -Wl,--start-group -Wl,-lm  -Wl,--end-group -Wl,--gc-sections -mmcu=atmega328p -B "C:\Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\ATmega_DFP\1.7.374\gcc\dev\atmega328p"  
 	@echo Finished building target: $@
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "Proyecto1_Digital2.elf" "Proyecto1_Digital2.hex"
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -j .eeprom  --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0  --no-change-warnings -O ihex "Proyecto1_Digital2.elf" "Proyecto1_Digital2.eep" || exit 0
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objdump.exe" -h -S "Proyecto1_Digital2.elf" > "Proyecto1_Digital2.lss"
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O srec -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures "Proyecto1_Digital2.elf" "Proyecto1_Digital2.srec"
-	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-size.exe" "Proyecto1_Digital2.elf"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O ihex -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures  "Proyecto1_D2_esclavo1.elf" "Proyecto1_D2_esclavo1.hex"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -j .eeprom  --set-section-flags=.eeprom=alloc,load --change-section-lma .eeprom=0  --no-change-warnings -O ihex "Proyecto1_D2_esclavo1.elf" "Proyecto1_D2_esclavo1.eep" || exit 0
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objdump.exe" -h -S "Proyecto1_D2_esclavo1.elf" > "Proyecto1_D2_esclavo1.lss"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-objcopy.exe" -O srec -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures "Proyecto1_D2_esclavo1.elf" "Proyecto1_D2_esclavo1.srec"
+	"C:\Program Files (x86)\Atmel\Studio\7.0\toolchain\avr8\avr8-gnu-toolchain\bin\avr-size.exe" "Proyecto1_D2_esclavo1.elf"
 	
 	
 
@@ -149,5 +162,5 @@ $(OUTPUT_FILE_PATH): $(OBJS) $(USER_OBJS) $(OUTPUT_FILE_DEP) $(LIB_DEP) $(LINKER
 clean:
 	-$(RM) $(OBJS_AS_ARGS) $(EXECUTABLES)  
 	-$(RM) $(C_DEPS_AS_ARGS)   
-	rm -rf "Proyecto1_Digital2.elf" "Proyecto1_Digital2.a" "Proyecto1_Digital2.hex" "Proyecto1_Digital2.lss" "Proyecto1_Digital2.eep" "Proyecto1_Digital2.map" "Proyecto1_Digital2.srec" "Proyecto1_Digital2.usersignatures"
+	rm -rf "Proyecto1_D2_esclavo1.elf" "Proyecto1_D2_esclavo1.a" "Proyecto1_D2_esclavo1.hex" "Proyecto1_D2_esclavo1.lss" "Proyecto1_D2_esclavo1.eep" "Proyecto1_D2_esclavo1.map" "Proyecto1_D2_esclavo1.srec" "Proyecto1_D2_esclavo1.usersignatures"
 	

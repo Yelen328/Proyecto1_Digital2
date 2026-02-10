@@ -3,29 +3,31 @@ Proyecto1_Digital2.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .data         00000000  00800100  00800100  00000208  2**0
+  0 .data         00000000  00800100  00800100  000003ac  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  1 .text         000001b4  00000000  00000000  00000054  2**1
+  1 .text         00000338  00000000  00000000  00000074  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  2 .comment      00000030  00000000  00000000  00000208  2**0
+  2 .bss          00000001  00800100  00800100  000003ac  2**0
+                  ALLOC
+  3 .comment      00000030  00000000  00000000  000003ac  2**0
                   CONTENTS, READONLY
-  3 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  00000238  2**2
+  4 .note.gnu.avr.deviceinfo 00000040  00000000  00000000  000003dc  2**2
                   CONTENTS, READONLY
-  4 .debug_aranges 00000080  00000000  00000000  00000278  2**0
+  5 .debug_aranges 00000080  00000000  00000000  0000041c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_info   000008dc  00000000  00000000  000002f8  2**0
+  6 .debug_info   00000a3c  00000000  00000000  0000049c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_abbrev 0000077e  00000000  00000000  00000bd4  2**0
+  7 .debug_abbrev 000007f0  00000000  00000000  00000ed8  2**0
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_line   0000051d  00000000  00000000  00001352  2**0
+  8 .debug_line   000005f6  00000000  00000000  000016c8  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_frame  000000d8  00000000  00000000  00001870  2**2
+  9 .debug_frame  000000d8  00000000  00000000  00001cc0  2**2
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_str    00000427  00000000  00000000  00001948  2**0
+ 10 .debug_str    0000047a  00000000  00000000  00001d98  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    0000017c  00000000  00000000  00001d6f  2**0
+ 11 .debug_loc    000001c4  00000000  00000000  00002212  2**0
                   CONTENTS, READONLY, DEBUGGING
- 11 .debug_ranges 00000060  00000000  00000000  00001eeb  2**0
+ 12 .debug_ranges 00000060  00000000  00000000  000023d6  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -76,11 +78,11 @@ Disassembly of section .text:
   7c:	1d 92       	st	X+, r1
 
 0000007e <.do_clear_bss_start>:
-  7e:	a0 30       	cpi	r26, 0x00	; 0
+  7e:	a1 30       	cpi	r26, 0x01	; 1
   80:	b2 07       	cpc	r27, r18
   82:	e1 f7       	brne	.-8      	; 0x7c <.do_clear_bss_loop>
-  84:	0e 94 b3 00 	call	0x166	; 0x166 <main>
-  88:	0c 94 d8 00 	jmp	0x1b0	; 0x1b0 <_exit>
+  84:	0e 94 40 01 	call	0x280	; 0x280 <main>
+  88:	0c 94 9a 01 	jmp	0x334	; 0x334 <_exit>
 
 0000008c <__bad_interrupt>:
   8c:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
@@ -175,7 +177,7 @@ void I2C_Master_Init(unsigned long SCL_Clock, uint8_t prescaler){
  104:	90 e0       	ldi	r25, 0x00	; 0
  106:	a9 01       	movw	r20, r18
  108:	98 01       	movw	r18, r16
- 10a:	0e 94 b6 00 	call	0x16c	; 0x16c <__udivmodsi4>
+ 10a:	0e 94 78 01 	call	0x2f0	; 0x2f0 <__udivmodsi4>
  10e:	ca 01       	movw	r24, r20
  110:	b9 01       	movw	r22, r18
  112:	60 51       	subi	r22, 0x10	; 16
@@ -191,7 +193,7 @@ void I2C_Master_Init(unsigned long SCL_Clock, uint8_t prescaler){
  126:	00 0c       	add	r0, r0
  128:	44 0b       	sbc	r20, r20
  12a:	55 0b       	sbc	r21, r21
- 12c:	0e 94 b6 00 	call	0x16c	; 0x16c <__udivmodsi4>
+ 12c:	0e 94 78 01 	call	0x2f0	; 0x2f0 <__udivmodsi4>
  130:	20 93 b8 00 	sts	0x00B8, r18	; 0x8000b8 <__TEXT_REGION_LENGTH__+0x7f80b8>
 	TWCR |= (1<<TWEN); //Activar comunicacion I2C
  134:	ec eb       	ldi	r30, 0xBC	; 188
@@ -205,89 +207,403 @@ void I2C_Master_Init(unsigned long SCL_Clock, uint8_t prescaler){
  142:	0f 91       	pop	r16
  144:	08 95       	ret
 
-00000146 <setup>:
+00000146 <I2C_Start>:
+
+//Función de inicio de la comunicación I2C
+uint8_t I2C_Start(void){
+	TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);	//Trabaja en modo master, bandera de interrupcion y condicion de inicio.
+ 146:	84 ea       	ldi	r24, 0xA4	; 164
+ 148:	80 93 bc 00 	sts	0x00BC, r24	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+	/*IMPORTANTE
+		Lo normal con comunicacion I2C es que el maestro este polliando y al esclavo se utilice las interrupciones.
+	*/
+	while (!(TWCR&(1<<TWINT)));	//Esperamos que ocurra evento con la bandera de TWCR
+ 14c:	80 91 bc 00 	lds	r24, 0x00BC	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+ 150:	88 23       	and	r24, r24
+ 152:	e4 f7       	brge	.-8      	; 0x14c <I2C_Start+0x6>
+	
+	return ((TWSR & 0xF8)==0x08);	//Nos quedamos con los bits de estado
+ 154:	90 91 b9 00 	lds	r25, 0x00B9	; 0x8000b9 <__TEXT_REGION_LENGTH__+0x7f80b9>
+ 158:	98 7f       	andi	r25, 0xF8	; 248
+ 15a:	81 e0       	ldi	r24, 0x01	; 1
+ 15c:	98 30       	cpi	r25, 0x08	; 8
+ 15e:	09 f0       	breq	.+2      	; 0x162 <I2C_Start+0x1c>
+ 160:	80 e0       	ldi	r24, 0x00	; 0
+	/*Porque 0x08? Porque ese es el comando o el codigo de estado que indica que se envio al condicion de inicio.
+	  Si se envio la condicion de inicio entonces esta funcion debe regresar un 1.
+	*/
+}
+ 162:	08 95       	ret
+
+00000164 <I2C_repeatedStart>:
+
+uint8_t I2C_repeatedStart(void){
+	TWCR = (1<<TWINT)|(1<<TWSTA)|(1<<TWEN);	//Trabaja en modo master, bandera de interrupcion y condicion de inicio.
+ 164:	84 ea       	ldi	r24, 0xA4	; 164
+ 166:	80 93 bc 00 	sts	0x00BC, r24	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+	
+	while (!(TWCR&(1<<TWINT)));	//Esperamos a que se encienda la bandera de TWCR
+ 16a:	80 91 bc 00 	lds	r24, 0x00BC	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+ 16e:	88 23       	and	r24, r24
+ 170:	e4 f7       	brge	.-8      	; 0x16a <I2C_repeatedStart+0x6>
+	
+	return ((TWSR & 0xF8)==0x10);	//Nos quedamos con los bits de estado
+ 172:	90 91 b9 00 	lds	r25, 0x00B9	; 0x8000b9 <__TEXT_REGION_LENGTH__+0x7f80b9>
+ 176:	98 7f       	andi	r25, 0xF8	; 248
+ 178:	81 e0       	ldi	r24, 0x01	; 1
+ 17a:	90 31       	cpi	r25, 0x10	; 16
+ 17c:	09 f0       	breq	.+2      	; 0x180 <I2C_repeatedStart+0x1c>
+ 17e:	80 e0       	ldi	r24, 0x00	; 0
+	/*Porque 0x10? Porque ese es el comando o el codigo de estado que indica que se envio al condicion de inicio.
+	  Si se envio la condicion de inicio entonces esta funcion debe regresar un 1.
+	*/
+}
+ 180:	08 95       	ret
+
+00000182 <I2C_Master_stop>:
+
+void I2C_Master_stop(void){
+	TWCR = (1<<TWINT)|(1<<TWSTO)|(1<<TWEN);	//Inicia la secuencia de parada
+ 182:	84 e9       	ldi	r24, 0x94	; 148
+ 184:	80 93 bc 00 	sts	0x00BC, r24	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+	
+	while (TWCR & (1<<TWSTO));	//Esperamos que el bit se limpie
+ 188:	80 91 bc 00 	lds	r24, 0x00BC	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+ 18c:	84 fd       	sbrc	r24, 4
+ 18e:	fc cf       	rjmp	.-8      	; 0x188 <I2C_Master_stop+0x6>
+}
+ 190:	08 95       	ret
+
+00000192 <I2C_Master_write>:
+
+uint8_t I2C_Master_write(uint8_t dato){
+	uint8_t estado;
+	
+	TWDR=dato;		//Cargo el dato
+ 192:	80 93 bb 00 	sts	0x00BB, r24	; 0x8000bb <__TEXT_REGION_LENGTH__+0x7f80bb>
+	TWCR=(1<<TWEN)|(1<<TWINT);	//Inicia la secuencia de envio limpiando la bandera y habilitando la interface
+ 196:	84 e8       	ldi	r24, 0x84	; 132
+ 198:	80 93 bc 00 	sts	0x00BC, r24	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+	
+	while(!(TWCR&(1<<TWINT)));	//Esperamos al flag TWINT
+ 19c:	80 91 bc 00 	lds	r24, 0x00BC	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+ 1a0:	88 23       	and	r24, r24
+ 1a2:	e4 f7       	brge	.-8      	; 0x19c <I2C_Master_write+0xa>
+	estado = TWSR & 0xF8;		//Limpiamos para quedarnos unicamente con los bits de estados
+ 1a4:	80 91 b9 00 	lds	r24, 0x00B9	; 0x8000b9 <__TEXT_REGION_LENGTH__+0x7f80b9>
+ 1a8:	88 7f       	andi	r24, 0xF8	; 248
+	//Verificar si se le envio una SLA+W con ACK o un dato con ACK
+	//Verificar comandos en datasheet o en la presentacion de I2C
+	if (estado == 0x18 || estado == 0x28){
+ 1aa:	88 31       	cpi	r24, 0x18	; 24
+ 1ac:	21 f0       	breq	.+8      	; 0x1b6 <I2C_Master_write+0x24>
+ 1ae:	88 32       	cpi	r24, 0x28	; 40
+ 1b0:	19 f4       	brne	.+6      	; 0x1b8 <I2C_Master_write+0x26>
+		return 1;
+ 1b2:	81 e0       	ldi	r24, 0x01	; 1
+ 1b4:	08 95       	ret
+ 1b6:	81 e0       	ldi	r24, 0x01	; 1
+		}else {
+		return estado;
+	}
+}
+ 1b8:	08 95       	ret
+
+000001ba <I2C_Master_read>:
+
+uint8_t I2C_Master_read(uint8_t *buffer, uint8_t ack){
+ 1ba:	fc 01       	movw	r30, r24
+	uint8_t estado;
+	
+	if (ack){
+ 1bc:	66 23       	and	r22, r22
+ 1be:	21 f0       	breq	.+8      	; 0x1c8 <I2C_Master_read+0xe>
+		TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);			//Habilitamos interface I2C con ack
+ 1c0:	84 ec       	ldi	r24, 0xC4	; 196
+ 1c2:	80 93 bc 00 	sts	0x00BC, r24	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+ 1c6:	03 c0       	rjmp	.+6      	; 0x1ce <I2C_Master_read+0x14>
+		}else {
+		TWCR = (1<<TWINT)|(1<<TWEN);		//Habilitamos interface I2C sin ack
+ 1c8:	84 e8       	ldi	r24, 0x84	; 132
+ 1ca:	80 93 bc 00 	sts	0x00BC, r24	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+	}
+	//se utiliza el ack obligatoriamente si la interaccion con el slave va a ser mayor a 1 byte sino no es necesario.
+	//(Se recomienda siempre usarla)
+	
+	while (!(TWCR&(1<<TWINT)));			//Esperar el flag
+ 1ce:	90 91 bc 00 	lds	r25, 0x00BC	; 0x8000bc <__TEXT_REGION_LENGTH__+0x7f80bc>
+ 1d2:	99 23       	and	r25, r25
+ 1d4:	e4 f7       	brge	.-8      	; 0x1ce <I2C_Master_read+0x14>
+	
+	estado = TWSR&0xF8;					//Nos quedamos con los bits de estado nuevamente
+ 1d6:	90 91 b9 00 	lds	r25, 0x00B9	; 0x8000b9 <__TEXT_REGION_LENGTH__+0x7f80b9>
+ 1da:	98 7f       	andi	r25, 0xF8	; 248
+	//Verificar si se recibio el dato ya sea con ACK o sin ACK
+	if (ack && estado != 0x50) return 0;
+ 1dc:	66 23       	and	r22, r22
+ 1de:	11 f0       	breq	.+4      	; 0x1e4 <I2C_Master_read+0x2a>
+ 1e0:	90 35       	cpi	r25, 0x50	; 80
+ 1e2:	49 f4       	brne	.+18     	; 0x1f6 <I2C_Master_read+0x3c>
+	if (ack && estado != 0x58) return 0;
+ 1e4:	66 23       	and	r22, r22
+ 1e6:	11 f0       	breq	.+4      	; 0x1ec <I2C_Master_read+0x32>
+ 1e8:	98 35       	cpi	r25, 0x58	; 88
+ 1ea:	39 f4       	brne	.+14     	; 0x1fa <I2C_Master_read+0x40>
+	
+	*buffer = TWDR; //obtenemos los resultados en el registro de datos
+ 1ec:	80 91 bb 00 	lds	r24, 0x00BB	; 0x8000bb <__TEXT_REGION_LENGTH__+0x7f80bb>
+ 1f0:	80 83       	st	Z, r24
+	return 1;
+ 1f2:	81 e0       	ldi	r24, 0x01	; 1
+ 1f4:	08 95       	ret
+	
+	while (!(TWCR&(1<<TWINT)));			//Esperar el flag
+	
+	estado = TWSR&0xF8;					//Nos quedamos con los bits de estado nuevamente
+	//Verificar si se recibio el dato ya sea con ACK o sin ACK
+	if (ack && estado != 0x50) return 0;
+ 1f6:	80 e0       	ldi	r24, 0x00	; 0
+ 1f8:	08 95       	ret
+	if (ack && estado != 0x58) return 0;
+ 1fa:	80 e0       	ldi	r24, 0x00	; 0
+	
+	*buffer = TWDR; //obtenemos los resultados en el registro de datos
+	return 1;
+}
+ 1fc:	08 95       	ret
+
+000001fe <setup>:
+		_delay_ms(1000);
     }
 }
 
 void setup(){
+	cli();
+ 1fe:	f8 94       	cli
 	//SALIDAS
 	DDRD |= (1<<DDD2)|(1<<DDD3)|(1<<DDD4)|(1<<DDD5)|(1<<DDD6)|(1<<DDD7);	//declarar el puerto D como salidas
- 146:	8a b1       	in	r24, 0x0a	; 10
- 148:	8c 6f       	ori	r24, 0xFC	; 252
- 14a:	8a b9       	out	0x0a, r24	; 10
+ 200:	8a b1       	in	r24, 0x0a	; 10
+ 202:	8c 6f       	ori	r24, 0xFC	; 252
+ 204:	8a b9       	out	0x0a, r24	; 10
 	PORTD = 0x00;	//Estado inicial apagado
- 14c:	1b b8       	out	0x0b, r1	; 11
+ 206:	1b b8       	out	0x0b, r1	; 11
 	
 	
 	//Declarar los bits 0 y 1 del puerto B como salida
 	DDRB |= (1<<DDB0)|(1<<DDB1);
- 14e:	84 b1       	in	r24, 0x04	; 4
- 150:	83 60       	ori	r24, 0x03	; 3
- 152:	84 b9       	out	0x04, r24	; 4
+ 208:	84 b1       	in	r24, 0x04	; 4
+ 20a:	83 60       	ori	r24, 0x03	; 3
+ 20c:	84 b9       	out	0x04, r24	; 4
 	PORTB = 0x00;	//Inicialmente apagado
- 154:	15 b8       	out	0x05, r1	; 5
+ 20e:	15 b8       	out	0x05, r1	; 5
 	
 	I2C_Master_Init(100000,1);
- 156:	41 e0       	ldi	r20, 0x01	; 1
- 158:	60 ea       	ldi	r22, 0xA0	; 160
- 15a:	76 e8       	ldi	r23, 0x86	; 134
- 15c:	81 e0       	ldi	r24, 0x01	; 1
- 15e:	90 e0       	ldi	r25, 0x00	; 0
- 160:	0e 94 48 00 	call	0x90	; 0x90 <I2C_Master_Init>
- 164:	08 95       	ret
+ 210:	41 e0       	ldi	r20, 0x01	; 1
+ 212:	60 ea       	ldi	r22, 0xA0	; 160
+ 214:	76 e8       	ldi	r23, 0x86	; 134
+ 216:	81 e0       	ldi	r24, 0x01	; 1
+ 218:	90 e0       	ldi	r25, 0x00	; 0
+ 21a:	0e 94 48 00 	call	0x90	; 0x90 <I2C_Master_Init>
+	sei();
+ 21e:	78 94       	sei
+ 220:	08 95       	ret
 
-00000166 <main>:
+00000222 <refreshPORT>:
+}
+
+void refreshPORT(uint8_t VALOR){
+	// ---- PORTD bits PD2–PD7 ----
+	PORTD &= ~((1<<PD2)|(1<<PD3)|(1<<PD4)|(1<<PD5)|(1<<PD6)|(1<<PD7)); // limpiar
+ 222:	9b b1       	in	r25, 0x0b	; 11
+ 224:	93 70       	andi	r25, 0x03	; 3
+ 226:	9b b9       	out	0x0b, r25	; 11
+
+	if(VALOR & (1<<0)) PORTD |= (1<<PD2);
+ 228:	80 ff       	sbrs	r24, 0
+ 22a:	03 c0       	rjmp	.+6      	; 0x232 <refreshPORT+0x10>
+ 22c:	9b b1       	in	r25, 0x0b	; 11
+ 22e:	94 60       	ori	r25, 0x04	; 4
+ 230:	9b b9       	out	0x0b, r25	; 11
+	if(VALOR & (1<<1)) PORTD |= (1<<PD3);
+ 232:	81 ff       	sbrs	r24, 1
+ 234:	03 c0       	rjmp	.+6      	; 0x23c <refreshPORT+0x1a>
+ 236:	9b b1       	in	r25, 0x0b	; 11
+ 238:	98 60       	ori	r25, 0x08	; 8
+ 23a:	9b b9       	out	0x0b, r25	; 11
+	if(VALOR & (1<<2)) PORTD |= (1<<PD4);
+ 23c:	82 ff       	sbrs	r24, 2
+ 23e:	03 c0       	rjmp	.+6      	; 0x246 <refreshPORT+0x24>
+ 240:	9b b1       	in	r25, 0x0b	; 11
+ 242:	90 61       	ori	r25, 0x10	; 16
+ 244:	9b b9       	out	0x0b, r25	; 11
+	if(VALOR & (1<<3)) PORTD |= (1<<PD5);
+ 246:	83 ff       	sbrs	r24, 3
+ 248:	03 c0       	rjmp	.+6      	; 0x250 <refreshPORT+0x2e>
+ 24a:	9b b1       	in	r25, 0x0b	; 11
+ 24c:	90 62       	ori	r25, 0x20	; 32
+ 24e:	9b b9       	out	0x0b, r25	; 11
+	if(VALOR & (1<<4)) PORTD |= (1<<PD6);
+ 250:	84 ff       	sbrs	r24, 4
+ 252:	03 c0       	rjmp	.+6      	; 0x25a <refreshPORT+0x38>
+ 254:	9b b1       	in	r25, 0x0b	; 11
+ 256:	90 64       	ori	r25, 0x40	; 64
+ 258:	9b b9       	out	0x0b, r25	; 11
+	if(VALOR & (1<<5)) PORTD |= (1<<PD7);
+ 25a:	85 ff       	sbrs	r24, 5
+ 25c:	03 c0       	rjmp	.+6      	; 0x264 <refreshPORT+0x42>
+ 25e:	9b b1       	in	r25, 0x0b	; 11
+ 260:	90 68       	ori	r25, 0x80	; 128
+ 262:	9b b9       	out	0x0b, r25	; 11
+
+	// ---- PORTB bits PB0–PB1 ----
+	PORTB &= ~((1<<PB0)|(1<<PB1)); // limpiar
+ 264:	95 b1       	in	r25, 0x05	; 5
+ 266:	9c 7f       	andi	r25, 0xFC	; 252
+ 268:	95 b9       	out	0x05, r25	; 5
+
+	if(VALOR & (1<<6)) PORTB |= (1<<PB0);
+ 26a:	86 ff       	sbrs	r24, 6
+ 26c:	03 c0       	rjmp	.+6      	; 0x274 <refreshPORT+0x52>
+ 26e:	95 b1       	in	r25, 0x05	; 5
+ 270:	91 60       	ori	r25, 0x01	; 1
+ 272:	95 b9       	out	0x05, r25	; 5
+	if(VALOR & (1<<7)) PORTB |= (1<<PB1);
+ 274:	88 23       	and	r24, r24
+ 276:	1c f4       	brge	.+6      	; 0x27e <refreshPORT+0x5c>
+ 278:	85 b1       	in	r24, 0x05	; 5
+ 27a:	82 60       	ori	r24, 0x02	; 2
+ 27c:	85 b9       	out	0x05, r24	; 5
+ 27e:	08 95       	ret
+
+00000280 <main>:
 void refreshPORT(uint8_t VALOR);
 
 
 int main(void)
 {
    setup();
- 166:	0e 94 a3 00 	call	0x146	; 0x146 <setup>
- 16a:	ff cf       	rjmp	.-2      	; 0x16a <main+0x4>
+ 280:	0e 94 ff 00 	call	0x1fe	; 0x1fe <setup>
+    while (1) 
+    {
+		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
+ 284:	0e 94 a3 00 	call	0x146	; 0x146 <I2C_Start>
+ 288:	88 23       	and	r24, r24
+ 28a:	79 f1       	breq	.+94     	; 0x2ea <main+0x6a>
+		
+		if (!I2C_Master_write(slave1W))	//si no devuelve 1 para la comunicación
+ 28c:	80 e6       	ldi	r24, 0x60	; 96
+ 28e:	0e 94 c9 00 	call	0x192	; 0x192 <I2C_Master_write>
+ 292:	81 11       	cpse	r24, r1
+ 294:	03 c0       	rjmp	.+6      	; 0x29c <main+0x1c>
+		{
+			I2C_Master_stop();
+ 296:	0e 94 c1 00 	call	0x182	; 0x182 <I2C_Master_stop>
+			return 0;
+ 29a:	27 c0       	rjmp	.+78     	; 0x2ea <main+0x6a>
+		}
+		
+		I2C_Master_write('R');	//Comando para prepararlo
+ 29c:	82 e5       	ldi	r24, 0x52	; 82
+ 29e:	0e 94 c9 00 	call	0x192	; 0x192 <I2C_Master_write>
+		
+		if (!I2C_repeatedStart())	//si está en el repeate start 
+ 2a2:	0e 94 b2 00 	call	0x164	; 0x164 <I2C_repeatedStart>
+ 2a6:	81 11       	cpse	r24, r1
+ 2a8:	03 c0       	rjmp	.+6      	; 0x2b0 <main+0x30>
+		{	
+			I2C_Master_stop();
+ 2aa:	0e 94 c1 00 	call	0x182	; 0x182 <I2C_Master_stop>
+			return 0;
+ 2ae:	1d c0       	rjmp	.+58     	; 0x2ea <main+0x6a>
+		}
+			
+		if (!I2C_Master_write(slave1R)){	//SI todo corre bien le escribo al esclavo 
+ 2b0:	81 e6       	ldi	r24, 0x61	; 97
+ 2b2:	0e 94 c9 00 	call	0x192	; 0x192 <I2C_Master_write>
+ 2b6:	81 11       	cpse	r24, r1
+ 2b8:	03 c0       	rjmp	.+6      	; 0x2c0 <main+0x40>
+			I2C_Master_stop();				// si no se da, paro la comunición
+ 2ba:	0e 94 c1 00 	call	0x182	; 0x182 <I2C_Master_stop>
+			return 0;
+ 2be:	15 c0       	rjmp	.+42     	; 0x2ea <main+0x6a>
+		}
+		
+		I2C_Master_read(&bufferI2C,0);	//NACK
+ 2c0:	60 e0       	ldi	r22, 0x00	; 0
+ 2c2:	80 e0       	ldi	r24, 0x00	; 0
+ 2c4:	91 e0       	ldi	r25, 0x01	; 1
+ 2c6:	0e 94 dd 00 	call	0x1ba	; 0x1ba <I2C_Master_read>
+		I2C_Master_stop();
+ 2ca:	0e 94 c1 00 	call	0x182	; 0x182 <I2C_Master_stop>
+		
+		refreshPORT(bufferI2C);
+ 2ce:	80 91 00 01 	lds	r24, 0x0100	; 0x800100 <__DATA_REGION_ORIGIN__>
+ 2d2:	0e 94 11 01 	call	0x222	; 0x222 <refreshPORT>
+	#else
+		//round up by default
+		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+	#endif
 
-0000016c <__udivmodsi4>:
- 16c:	a1 e2       	ldi	r26, 0x21	; 33
- 16e:	1a 2e       	mov	r1, r26
- 170:	aa 1b       	sub	r26, r26
- 172:	bb 1b       	sub	r27, r27
- 174:	fd 01       	movw	r30, r26
- 176:	0d c0       	rjmp	.+26     	; 0x192 <__udivmodsi4_ep>
+	__builtin_avr_delay_cycles(__ticks_dc);
+ 2d6:	2f ef       	ldi	r18, 0xFF	; 255
+ 2d8:	83 ed       	ldi	r24, 0xD3	; 211
+ 2da:	90 e3       	ldi	r25, 0x30	; 48
+ 2dc:	21 50       	subi	r18, 0x01	; 1
+ 2de:	80 40       	sbci	r24, 0x00	; 0
+ 2e0:	90 40       	sbci	r25, 0x00	; 0
+ 2e2:	e1 f7       	brne	.-8      	; 0x2dc <main+0x5c>
+ 2e4:	00 c0       	rjmp	.+0      	; 0x2e6 <main+0x66>
+ 2e6:	00 00       	nop
+ 2e8:	cd cf       	rjmp	.-102    	; 0x284 <main+0x4>
+		_delay_ms(1000);
+    }
+}
+ 2ea:	80 e0       	ldi	r24, 0x00	; 0
+ 2ec:	90 e0       	ldi	r25, 0x00	; 0
+ 2ee:	08 95       	ret
 
-00000178 <__udivmodsi4_loop>:
- 178:	aa 1f       	adc	r26, r26
- 17a:	bb 1f       	adc	r27, r27
- 17c:	ee 1f       	adc	r30, r30
- 17e:	ff 1f       	adc	r31, r31
- 180:	a2 17       	cp	r26, r18
- 182:	b3 07       	cpc	r27, r19
- 184:	e4 07       	cpc	r30, r20
- 186:	f5 07       	cpc	r31, r21
- 188:	20 f0       	brcs	.+8      	; 0x192 <__udivmodsi4_ep>
- 18a:	a2 1b       	sub	r26, r18
- 18c:	b3 0b       	sbc	r27, r19
- 18e:	e4 0b       	sbc	r30, r20
- 190:	f5 0b       	sbc	r31, r21
+000002f0 <__udivmodsi4>:
+ 2f0:	a1 e2       	ldi	r26, 0x21	; 33
+ 2f2:	1a 2e       	mov	r1, r26
+ 2f4:	aa 1b       	sub	r26, r26
+ 2f6:	bb 1b       	sub	r27, r27
+ 2f8:	fd 01       	movw	r30, r26
+ 2fa:	0d c0       	rjmp	.+26     	; 0x316 <__udivmodsi4_ep>
 
-00000192 <__udivmodsi4_ep>:
- 192:	66 1f       	adc	r22, r22
- 194:	77 1f       	adc	r23, r23
- 196:	88 1f       	adc	r24, r24
- 198:	99 1f       	adc	r25, r25
- 19a:	1a 94       	dec	r1
- 19c:	69 f7       	brne	.-38     	; 0x178 <__udivmodsi4_loop>
- 19e:	60 95       	com	r22
- 1a0:	70 95       	com	r23
- 1a2:	80 95       	com	r24
- 1a4:	90 95       	com	r25
- 1a6:	9b 01       	movw	r18, r22
- 1a8:	ac 01       	movw	r20, r24
- 1aa:	bd 01       	movw	r22, r26
- 1ac:	cf 01       	movw	r24, r30
- 1ae:	08 95       	ret
+000002fc <__udivmodsi4_loop>:
+ 2fc:	aa 1f       	adc	r26, r26
+ 2fe:	bb 1f       	adc	r27, r27
+ 300:	ee 1f       	adc	r30, r30
+ 302:	ff 1f       	adc	r31, r31
+ 304:	a2 17       	cp	r26, r18
+ 306:	b3 07       	cpc	r27, r19
+ 308:	e4 07       	cpc	r30, r20
+ 30a:	f5 07       	cpc	r31, r21
+ 30c:	20 f0       	brcs	.+8      	; 0x316 <__udivmodsi4_ep>
+ 30e:	a2 1b       	sub	r26, r18
+ 310:	b3 0b       	sbc	r27, r19
+ 312:	e4 0b       	sbc	r30, r20
+ 314:	f5 0b       	sbc	r31, r21
 
-000001b0 <_exit>:
- 1b0:	f8 94       	cli
+00000316 <__udivmodsi4_ep>:
+ 316:	66 1f       	adc	r22, r22
+ 318:	77 1f       	adc	r23, r23
+ 31a:	88 1f       	adc	r24, r24
+ 31c:	99 1f       	adc	r25, r25
+ 31e:	1a 94       	dec	r1
+ 320:	69 f7       	brne	.-38     	; 0x2fc <__udivmodsi4_loop>
+ 322:	60 95       	com	r22
+ 324:	70 95       	com	r23
+ 326:	80 95       	com	r24
+ 328:	90 95       	com	r25
+ 32a:	9b 01       	movw	r18, r22
+ 32c:	ac 01       	movw	r20, r24
+ 32e:	bd 01       	movw	r22, r26
+ 330:	cf 01       	movw	r24, r30
+ 332:	08 95       	ret
 
-000001b2 <__stop_program>:
- 1b2:	ff cf       	rjmp	.-2      	; 0x1b2 <__stop_program>
+00000334 <_exit>:
+ 334:	f8 94       	cli
+
+00000336 <__stop_program>:
+ 336:	ff cf       	rjmp	.-2      	; 0x336 <__stop_program>

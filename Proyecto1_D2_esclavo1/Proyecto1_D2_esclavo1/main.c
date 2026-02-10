@@ -1,7 +1,7 @@
 /*
- * Proyecto1_Digital2.c
+ * Proyecto1_D2_esclavo1.c
  *
- * Created: 10/2/2026 00:07:48
+ * Created: 10/2/2026 09:36:36
  * Author : yelen
  */ 
 

@@ -17,14 +17,18 @@
 //Definición de direcciones 
 #define slave1R (0x30 << 1)| 0x01		//para leer
 #define slave1W (0x30 << 1)& 0b11111110	//Para escribir
+#define slave2R (0x40 << 1)| 0x01		//para leer
+#define slave2W (0x40 << 1)& 0b11111110	//Para escribir
 
 
 uint8_t direccion;
 uint8_t temp;
-uint8_t bufferI2C=0;
+uint8_t bufferI2CS1=0;
+uint8_t bufferI2CS2=0;
 
 void setup();
 void refreshPORT(uint8_t VALOR);
+void refreshPORT2(uint8_t VALOR);
 
 
 int main(void)
@@ -32,6 +36,7 @@ int main(void)
    setup();
     while (1) 
     {
+		//Preparar el slave 1
 		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
 		
 		if (!I2C_Master_write(slave1W))	//si no devuelve 1 para la comunicación
@@ -39,6 +44,7 @@ int main(void)
 			I2C_Master_stop();
 			return 0;
 		}
+		
 		
 		I2C_Master_write('R');	//Comando para prepararlo
 		
@@ -53,10 +59,39 @@ int main(void)
 			return 0;
 		}
 		
-		I2C_Master_read(&bufferI2C,0);	//NACK
+		I2C_Master_read(&bufferI2CS1,0);	//NACK
 		I2C_Master_stop();
 		
-		refreshPORT(bufferI2C);
+		
+		//LEER ESCLAVO 2
+		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
+		
+		if (!I2C_Master_write(slave2W))	//si no devuelve 1 para la comunicación
+		{
+			I2C_Master_stop();
+			return 0;
+		}
+		
+		
+		I2C_Master_write('R');	//Comando para prepararlo
+		
+		if (!I2C_repeatedStart())	//si está en el repeate start
+		{
+			I2C_Master_stop();
+			return 0;
+		}
+		
+		if (!I2C_Master_write(slave2R)){	//SI todo corre bien le escribo al esclavo
+			I2C_Master_stop();				// si no se da, paro la comunición
+			return 0;
+		}
+		
+		I2C_Master_read(&bufferI2CS2,0);	//NACK
+		I2C_Master_stop();
+		
+		
+		refreshPORT(bufferI2CS1);
+		refreshPORT2(bufferI2CS2);
 		_delay_ms(1000);
     }
 }
@@ -92,6 +127,14 @@ void refreshPORT(uint8_t VALOR){
 
 	if(VALOR & (1<<6)) PORTB |= (1<<PB0);
 	if(VALOR & (1<<7)) PORTB |= (1<<PB1);
+}
+
+void refreshPORT2(uint8_t VALOR){
+	// ---- PORTB bits PB2–PB3 ----
+	PORTB &= ~((1<<PB2)|(1<<PB3)); // limpiar
+
+	if(VALOR & (1<<0)) PORTB |= (1<<PB2);
+	if(VALOR & (1<<1)) PORTB |= (1<<PB3);
 }
 
 

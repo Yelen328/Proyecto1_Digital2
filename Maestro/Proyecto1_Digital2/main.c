@@ -8,17 +8,17 @@
 #include <avr/io.h>
 #define  F_CPU	16000000
 #include "util/delay.h"
-#include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
 
 #include "I2C/I2C.h"
+#include "UART/UART.h"
 
 //Definición de direcciones 
 #define slave1R (0x30 << 1)| 0x01		//para leer
 #define slave1W (0x30 << 1)& 0b11111110	//Para escribir
-#define slave2R (0x40 << 1)| 0x01		//para leer
-#define slave2W (0x40 << 1)& 0b11111110	//Para escribir
+//#define slave2R (0x40 << 1)| 0x01		//para leer
+//#define slave2W (0x40 << 1)& 0b11111110	//Para escribir
 
 
 uint8_t direccion;
@@ -34,6 +34,7 @@ void refreshPORT2(uint8_t VALOR);
 int main(void)
 {
    setup();
+   char mensaje_serial[50];
     while (1) 
     {
 		//Preparar el slave 1
@@ -62,8 +63,11 @@ int main(void)
 		I2C_Master_read(&bufferI2CS1,0);	//NACK
 		I2C_Master_stop();
 		
+		sprintf(mensaje_serial, "Dato recibido del Esclavo 1: %d\r\n", bufferI2CS1);
+		writeString(mensaje_serial);
 		
-		//LEER ESCLAVO 2
+		
+		/*LEER ESCLAVO 2
 		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
 		
 		if (!I2C_Master_write(slave2W))	//si no devuelve 1 para la comunicación
@@ -87,11 +91,11 @@ int main(void)
 		}
 		
 		I2C_Master_read(&bufferI2CS2,0);	//NACK
-		I2C_Master_stop();
+		I2C_Master_stop();*/
 		
 		
-		refreshPORT(bufferI2CS1);
-		refreshPORT2(bufferI2CS2);
+		//refreshPORT(bufferI2CS1);
+		//refreshPORT2(bufferI2CS2);
 		_delay_ms(1000);
     }
 }
@@ -108,6 +112,8 @@ void setup(){
 	PORTB = 0x00;	//Inicialmente apagado
 	
 	I2C_Master_Init(100000,1);
+	INIT_UART(103);
+	
 	sei();
 }
 

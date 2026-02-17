@@ -8,5 +8,7 @@ I2C\I2C.c
 
 main.c
 
+sTemperatura\sTemperatura.c
+
 UART\UART.c
 

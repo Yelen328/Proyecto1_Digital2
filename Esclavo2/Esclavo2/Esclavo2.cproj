@@ -120,6 +120,12 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ADC\ADC.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="ADC\ADC.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="I2C\I2C.c">
       <SubType>compile</SubType>
     </Compile>
@@ -129,9 +135,31 @@
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="PWM\PWM.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="PWM\PWM.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UART\UART.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="UART\UART.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Ultrasonico\Ultrasonico.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Ultrasonico\Ultrasonico.h">
+      <SubType>compile</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="I2C" />
+    <Folder Include="ADC" />
+    <Folder Include="UART" />
+    <Folder Include="Ultrasonico" />
+    <Folder Include="PWM" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>

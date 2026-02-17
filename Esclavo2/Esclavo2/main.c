@@ -4,13 +4,19 @@
  * Author : Daniela Moriera 
  */ 
 
-#include <avr/io.h>
-#define  F_CPU	16000000
-#include "util/delay.h"
+#ifndef F_CPU
+#define F_CPU 16000000
+#endif
+//Librerias
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <stdlib.h>
 #include <stdio.h>
-
+#include <util/delay.h>
+#include "Ultrasonico/Ultrasonico.h"
+#include "UART/UART.h"  // Incluir librería UART
+#include "PWM/PWM.h"
+#include "ADC/ADC.h"
 #include "I2C/I2C.h"
 
 
@@ -18,47 +24,127 @@
 #define SlaveAddress 0x40
 
 uint8_t buffer =0;
-uint8_t dato_enviado=2; 
+//uint8_t dato_enviado_SU=0; 
 
-//PROTOTIPOS DE FUNCIÓN
-void setup();
+/************************Variables globales***************************/
+Ultrasonico sensor1; //declarando el puntero de la librería
+
+/************************Variables***************************/
+uint16_t distancia_s1;
+uint8_t distancia_map_s1;
+uint8_t Lec_ADC=0;
+char bufferUART[50];  // Buffer para imprimir por UART
+/************************Prototipos de funciones ***************************/
+void setup(); //configuración de los pines e interrupciones
+void initTM1(); //configuración de l timer 1
+
 
 
 int main(void)
 {
 	setup();
-    /* Replace with your application code */
+	UART_writeString("Sistema iniciado - Sensor Ultrasonico\r\n");
+	_delay_ms(1000);
+ 
     while (1) 
     {
 		if (buffer=='R'){	//Si se recibe R
-			PINB |= (1<<PINB5);	//Hacer un toggle
+			if (ultrasonico_lectura_disponible(&sensor1)) {
+				// Procesar la lectura
+				distancia_s1 = ultrasonico_get_distancia(&sensor1);
+				distancia_map_s1 = ultrasonico_get_distancia_map(&sensor1);
+				
+				// IMPRIMIR POR UART
+				sprintf(bufferUART, "Distancia: %u cm | Mapeado: %u\r\n", distancia_s1, distancia_map_s1);
+				UART_writeString(bufferUART);
+				
+				// CONTROL DEL LED EN PD4
+				if (distancia_s1 < 10) {
+					UART_writeString("LED ENCENDIDO - Objeto cerca!\r\n");
+					Servo_setPosition(1);
+					} else {
+					UART_writeString("LED APAGADO - Objeto lejos\r\n");
+					Servo_setPosition(0);
+				}
+				
+				// Reiniciar para siguiente medición
+				ultrasonico_reiniciar(&sensor1);
+				_delay_ms(500);  // Aumentado a 500ms para ver mejor por UART
+			}
+			
+			ultrasonico_trigger(&sensor1);
+			_delay_ms(1);
+			if (Lec_ADC >= 100)
+			{
+				PORTB |= (1<<PB0);   // Motor ON
+			}
+			else
+			{
+				PORTB &= ~(1<<PB0);  // Motor OFF
+			}
+		}
+			
+			
+			
 			buffer=0;
 			}	//limpiar buffer para que se haga una vez cuando se le mande la información
 			
-		
-		
+			
 		_delay_ms(100);
-		
-		
-		
     }
-}
+
 
 
 //SUBRUTINAS
-void setup(){
+
+void setup()
+{
 	cli();
-	DDRB |= (1<<DDB5);
-	PORTB &= ~(1<<PORTB5);
+	DDRB |= (1 << PB0);
+	DDRB |= (1<<PB1);   // IN1 salida
+	PORTB &= ~(1 << PB0);
+	
+	ServoTimer2_init();
+	UART_init(103);
+	// Configurar LED en PD4 como salida
+	initTM1();
+	ultrasonico_init(&sensor1);
+	ADC_init(1, 2, 0, 1, 128);
+	PCICR |= (1 << PCIE2);    // Habilitar interrupciones pinchange PD
+	PCMSK2 |= (1 << PCINT18);  // Habilitar interrupción pinchange PD2
 	//Configurar como esclavo
 	I2C_init_Slave(SlaveAddress);
+	
 	sei();
-
 }
 
 
-//VECTORES DE INTERRUPCIÓN
+void initTM1()
+{
+	TCCR1A = 0;
+	// Configurar Timer1 para medición
+	TCCR1B = (1 << CS11);    // Prescaler 8, duración de 0.5 µs
+	
+}
 
+//VECTORES DE INTERRUPCIÓN
+/**********INTERRUPT ISR*****************/
+ISR(PCINT2_vect) {
+	//si detecta que el PD3 está en alto echo_state es 1
+	uint8_t echo_state;
+	if (PIND & (1 << PD2)) {
+		echo_state = 1;
+	}
+	else {
+		echo_state = 0; //cuando pasa al flanco de bajada es cuando termina el pulso
+	}
+	ultrasonico_procesar_eco(&sensor1, echo_state);
+}
+ISR(ADC_vect)
+{
+	Lec_ADC=ADCH; //guardar el valor leido de voltaje en la variable
+	ADCSRA |= (1<<ADEN)|(1<<ADSC);
+}
 
 //Vector de interrupción de I2C
 ISR(TWI_vect){
@@ -85,7 +171,7 @@ ISR(TWI_vect){
 		
 		case 0xA8:	//Dirección recibida para ser leído
 		case 0xB8: //Dato transmitido, ACK recibido
-			TWDR = dato_enviado;	//Datos a enviar, se enviará 2 para confirmar comunicación con el mastro. 
+			TWDR = distancia_s1;	//Datos a enviar, se enviará 2 para confirmar comunicación con el mastro. 
 			TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWIE)|(1<<TWEA);
 			break;
 			

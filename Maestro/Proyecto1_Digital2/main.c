@@ -6,25 +6,31 @@
  */ 
 
 #include <avr/io.h>
-#define  F_CPU	16000000
-#include "util/delay.h"
+#define F_CPU 16000000UL  // 1. Definir la frecuencia (16MHz)
+#include <util/delay.h>   // 3. Ahora sí, la librería de delays
 #include <avr/interrupt.h>
 #include <stdio.h>
 
 #include "I2C/I2C.h"
 #include "UART/UART.h"
+#include "sTemperatura/sTemperatura.h"
 
 //Definición de direcciones 
 #define slave1R (0x30 << 1)| 0x01		//para leer
 #define slave1W (0x30 << 1)& 0b11111110	//Para escribir
-//#define slave2R (0x40 << 1)| 0x01		//para leer
-//#define slave2W (0x40 << 1)& 0b11111110	//Para escribir
+#define slave2R (0x40 << 1)| 0x01		//para leer
+#define slave2W (0x40 << 1)& 0b11111110	//Para escribir
+//#define slavesensortR (0x38 << 1)| 0x01		//para leer
+//#define slavesensortW (0x38 << 1)& 0b11111110	//Para escribir
 
 
 uint8_t direccion;
 uint8_t temp;
 uint8_t bufferI2CS1=0;
 uint8_t bufferI2CS2=0;
+uint8_t buffersensor=0;
+float humedad=0;
+float temperatura=0;
 
 void setup();
 void refreshPORT(uint8_t VALOR);
@@ -35,6 +41,7 @@ int main(void)
 {
    setup();
    char mensaje_serial[50];
+   //char buffer_sensor[50];
     while (1) 
     {
 		//Preparar el slave 1
@@ -67,7 +74,8 @@ int main(void)
 		writeString(mensaje_serial);
 		
 		
-		/*LEER ESCLAVO 2
+		
+		//LEER ESCLAVO 2
 		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
 		
 		if (!I2C_Master_write(slave2W))	//si no devuelve 1 para la comunicación
@@ -91,28 +99,41 @@ int main(void)
 		}
 		
 		I2C_Master_read(&bufferI2CS2,0);	//NACK
-		I2C_Master_stop();*/
+		I2C_Master_stop();
+		
+		sprintf(mensaje_serial, "Dato recibido del Esclavo 2: %d\r\n", bufferI2CS2);
+		writeString(mensaje_serial);
 		
 		
+		//LEER ESCLAVO sensor de temperatura
+	
 		//refreshPORT(bufferI2CS1);
 		//refreshPORT2(bufferI2CS2);
-		_delay_ms(1000);
+		//_delay_ms(1000);
+		
+		
+		/*writeString("Iniciando lectura...\r\n");
+		AHT10_Read(&humedad, &temperatura);
+		sprintf(buffer_sensor, "remperatura: %f\r\n", temperatura);
+		writeString(buffer_sensor);*/
+		
     }
 }
 
 void setup(){
 	cli();
 	//SALIDAS
-	DDRD |= (1<<DDD2)|(1<<DDD3)|(1<<DDD4)|(1<<DDD5)|(1<<DDD6)|(1<<DDD7);	//declarar el puerto D como salidas
-	PORTD = 0x00;	//Estado inicial apagado
+	//DDRD |= (1<<DDD2)|(1<<DDD3)|(1<<DDD4)|(1<<DDD5)|(1<<DDD6)|(1<<DDD7);	//declarar el puerto D como salidas
+	//PORTD = 0x00;	//Estado inicial apagado
 	
 	
 	//Declarar los bits 0 y 1 del puerto B como salida
-	DDRB |= (1<<DDB0)|(1<<DDB1);
-	PORTB = 0x00;	//Inicialmente apagado
+	//DDRB |= (1<<DDB0)|(1<<DDB1);
+	//PORTB = 0x00;	//Inicialmente apagado
 	
 	I2C_Master_Init(100000,1);
 	INIT_UART(103);
+	AHT10_begin();
 	
 	sei();
 }

@@ -13,15 +13,21 @@
 
 #include "I2C/I2C.h"
 #include "UART/UART.h"
-#include "sTemperatura/sTemperatura.h"
+//#include "sTemperatura/sTemperatura.h"
 
 //Definición de direcciones 
 #define slave1R (0x30 << 1)| 0x01		//para leer
 #define slave1W (0x30 << 1)& 0b11111110	//Para escribir
 #define slave2R (0x40 << 1)| 0x01		//para leer
 #define slave2W (0x40 << 1)& 0b11111110	//Para escribir
-//#define slavesensortR (0x38 << 1)| 0x01		//para leer
-//#define slavesensortW (0x38 << 1)& 0b11111110	//Para escribir
+#define slavesensortR (0x38 << 1)| 0x01		//para leer
+#define slavesensortW (0x38 << 1)& 0b11111110	//Para escribir
+
+//Para el sensor de temperatura:
+#define initializacion_comand 0xE1 // Comando para iniciar la calibración.
+#define TRIGGER 0xAC   // Comando para pedir una medición.
+#define AHT10_SOFTRESET 0xBA // Comando para reiniciar el sensor por software.
+
 
 
 uint8_t direccion;
@@ -35,13 +41,15 @@ float temperatura=0;
 void setup();
 void refreshPORT(uint8_t VALOR);
 void refreshPORT2(uint8_t VALOR);
+void AHT10_begin(void);
+void AHT10_Read(float *hum, float *temp);
 
 
 int main(void)
 {
    setup();
    char mensaje_serial[50];
-   //char buffer_sensor[50];
+   char buffer_sensor[50];
     while (1) 
     {
 		//Preparar el slave 1
@@ -105,32 +113,21 @@ int main(void)
 		writeString(mensaje_serial);
 		
 		
-		//LEER ESCLAVO sensor de temperatura
-	
-		//refreshPORT(bufferI2CS1);
-		//refreshPORT2(bufferI2CS2);
-		//_delay_ms(1000);
 		
 		
-		/*writeString("Iniciando lectura...\r\n");
+		//LEER ESCLAVO sensor de temperatura	
+		
+		writeString("Iniciando lectura...\r\n");
 		AHT10_Read(&humedad, &temperatura);
-		sprintf(buffer_sensor, "remperatura: %f\r\n", temperatura);
-		writeString(buffer_sensor);*/
+		sprintf(buffer_sensor, "temperatura: %f\r\n", temperatura);
+		writeString(buffer_sensor);
+		_delay_ms(1000);
 		
     }
 }
 
 void setup(){
-	cli();
-	//SALIDAS
-	//DDRD |= (1<<DDD2)|(1<<DDD3)|(1<<DDD4)|(1<<DDD5)|(1<<DDD6)|(1<<DDD7);	//declarar el puerto D como salidas
-	//PORTD = 0x00;	//Estado inicial apagado
-	
-	
-	//Declarar los bits 0 y 1 del puerto B como salida
-	//DDRB |= (1<<DDB0)|(1<<DDB1);
-	//PORTB = 0x00;	//Inicialmente apagado
-	
+	cli();	
 	I2C_Master_Init(100000,1);
 	INIT_UART(103);
 	AHT10_begin();
@@ -165,3 +162,84 @@ void refreshPORT2(uint8_t VALOR){
 }
 
 
+void AHT10_begin(void){
+	
+	TWBR = 72;
+	TWSR = 0x00;
+	
+	
+	// 1. Reinicio por Software
+	I2C_Start();
+	I2C_Master_write(slavesensortW);
+	I2C_Master_write(AHT10_SOFTRESET);
+	I2C_Master_stop();
+	
+	_delay_ms(40); // El datasheet recomienda un poco más de tiempo tras el reset
+	
+	// 2. Calibración
+	I2C_Start();
+	I2C_Master_write(slavesensortW);
+	I2C_Master_write(initializacion_comand);
+	I2C_Master_write(0x08); // Parámetro de calibración
+	I2C_Master_write(0x00);
+	I2C_Master_stop();
+	
+	_delay_ms(20);
+}
+
+
+void AHT10_Read(float *hum, float *temp){
+	uint8_t buffer[6];
+	writeString("prepaso");
+	// 1. Pedir medición
+	I2C_Start();
+	writeString("Paso 0");
+	I2C_Master_write(slavesensortW);
+	writeString("Paso 1");
+	I2C_Master_write('R');	//Comando para prepararlo
+	writeString("Paso 3");
+	if (!I2C_repeatedStart())	//si está en el repeate start
+	{
+		I2C_Master_stop();
+		return 0;
+	}
+	
+	writeString("Paso 4");
+	I2C_Master_write(slavesensortR);
+	
+	writeString("Paso 5");
+	
+	I2C_Master_write(TRIGGER);
+	writeString("Paso trigger");
+	
+	I2C_Master_write(0x33);
+	I2C_Master_write(0x00);
+	I2C_Master_stop();
+	
+	writeString("Paso 6");
+	
+	_delay_ms(80); // Espera a que el sensor termine de medir
+	
+	// 2. Leer los 6 bytes usando tu función I2C_Master_read
+	I2C_Start();
+	I2C_Master_write(slavesensortR);
+	writeString("Paso 7");
+	
+	for(int i=0; i < 6; i++) {
+		if (i < 5) {
+			// Tu función usa: I2C_Master_read(puntero_al_buffer, ack)
+			// ack = 1 para que el sensor mande el siguiente byte
+			I2C_Master_read(&buffer[i], 1);
+			} else {
+			// ack = 0 para el último byte (NACK)
+			I2C_Master_read(&buffer[i], 0);
+		}
+	}
+	I2C_Master_stop();
+	// 3. Cálculos matemáticos
+	uint32_t tdata = ((uint32_t)(buffer[3] & 0x0F) << 16) | ((uint32_t)buffer[4] << 8) | buffer[5];
+	*temp = ((float)tdata * 200 / 1048576) - 50;
+	
+	uint32_t hdata = ((uint32_t)buffer[1] << 12) | ((uint32_t)buffer[2] << 4) | (buffer[3] >> 4);
+	*hum = (float)hdata * 100 / 1048576;
+}

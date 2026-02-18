@@ -74,7 +74,7 @@ uint8_t I2C_Master_write(uint8_t dato){
 	estado = TWSR & 0xF8;		//Limpiamos para quedarnos unicamente con los bits de estados
 	//Verificar si se le envio una SLA+W con ACK o un dato con ACK
 	//Verificar comandos en datasheet o en la presentacion de I2C
-	if (estado == 0x18 || estado == 0x28){
+	if (estado == 0x18 || estado == 0x28 || estado == 0x40 ){
 		return 1;
 		}else {
 		return estado;
@@ -83,23 +83,24 @@ uint8_t I2C_Master_write(uint8_t dato){
 
 uint8_t I2C_Master_read(uint8_t *buffer, uint8_t ack){
 	uint8_t estado;
-	
+
 	if (ack){
-		TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);			//Habilitamos interface I2C con ack
-		}else {
-		TWCR = (1<<TWINT)|(1<<TWEN);		//Habilitamos interface I2C sin ack
+		TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWEA);
+		} else {
+		TWCR = (1<<TWINT)|(1<<TWEN);
 	}
-	//se utiliza el ack obligatoriamente si la interaccion con el slave va a ser mayor a 1 byte sino no es necesario.
-	//(Se recomienda siempre usarla)
-	
-	while (!(TWCR&(1<<TWINT)));			//Esperar el flag
-	
-	estado = TWSR&0xF8;					//Nos quedamos con los bits de estado nuevamente
-	//Verificar si se recibio el dato ya sea con ACK o sin ACK
-	if (ack && estado != 0x50) return 0;
-	if (ack && estado != 0x58) return 0;
-	
-	*buffer = TWDR; //obtenemos los resultados en el registro de datos
+
+	while (!(TWCR&(1<<TWINT)));
+
+	estado = TWSR & 0xF8;
+
+	if (ack) {
+		if (estado != 0x50) return 0;
+		} else {
+		if (estado != 0x58) return 0;
+	}
+
+	*buffer = TWDR;
 	return 1;
 }
 

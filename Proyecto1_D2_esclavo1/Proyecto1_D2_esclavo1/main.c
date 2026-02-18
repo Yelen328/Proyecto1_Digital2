@@ -79,7 +79,7 @@ int main(void)
 		rojo, verde, azul);
 		writeString(buffer);	
 			
-		if ( rojo >1500 && verde > 575 && azul > 720){		// si valores dentro del rango
+		if ( rojo >1500 ){		// si valores dentro del rango
 			//writeString("ROJO \r\n");				// muestra texto
 			mover_motor(1,1);
 			color_detectado=1;

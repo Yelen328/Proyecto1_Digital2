@@ -35,14 +35,12 @@ uint8_t temp;
 uint8_t bufferI2CS1=0;
 uint8_t bufferI2CS2=0;
 uint8_t buffersensor=0;
-float humedad=0;
+uint8_t estado_motor_DC=0;
 float temperatura=0;
 
 void setup();
 void refreshPORT(uint8_t VALOR);
 void refreshPORT2(uint8_t VALOR);
-void AHT10_begin(void);
-void AHT10_Read(float *hum, float *temp);
 
 //void actualizarS3(char *lista, float temp);
 
@@ -100,6 +98,11 @@ int main(void)
 			return 0;
 		}
 		
+		if (!I2C_Master_write(estado_motor_DC)){
+			I2C_Master_stop();
+			return 0;
+		}
+		
 		
 		I2C_Master_write('R');	//Comando para prepararlo
 		
@@ -113,6 +116,7 @@ int main(void)
 			I2C_Master_stop();				// si no se da, paro la comunición
 			return 0;
 		}
+		
 		
 		I2C_Master_read(&bufferI2CS2,0);	//NACK
 		I2C_Master_stop();
@@ -136,6 +140,19 @@ int main(void)
 		}
 		else {
 			writeString("Lectura de sensor I2C fallo\n");
+		}
+		
+		
+		_delay_ms(1);
+		if (lectura_LM75 >= 23)
+		{
+			estado_motor_DC=1;
+			//PORTB |= (1<<PB0);   // Motor ON
+		}
+		else
+		{
+			estado_motor_DC=0;
+			//PORTB &= ~(1<<PB0);  // Motor OFF
 		}
 		
 		_delay_ms(500);

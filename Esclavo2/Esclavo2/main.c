@@ -33,6 +33,9 @@ Ultrasonico sensor1; //declarando el puntero de la librería
 uint16_t distancia_s1;
 uint8_t distancia_map_s1;
 uint8_t Lec_ADC=0;
+
+volatile uint8_t Estado_motorDC;
+volatile uint8_t I2C_Slave_DataReady = 0;
 char bufferUART[50];  // Buffer para imprimir por UART
 /************************Prototipos de funciones ***************************/
 void setup(); //configuración de los pines e interrupciones
@@ -74,7 +77,7 @@ int main(void)
 			
 			ultrasonico_trigger(&sensor1);
 			_delay_ms(1);
-			if (Lec_ADC >= 100)
+			if (Estado_motorDC==1)
 			{
 				PORTB |= (1<<PB0);   // Motor ON
 			}
@@ -83,8 +86,6 @@ int main(void)
 				PORTB &= ~(1<<PB0);  // Motor OFF
 			}
 		}
-			
-			
 			
 			buffer=0;
 			}	//limpiar buffer para que se haga una vez cuando se le mande la información
@@ -162,6 +163,10 @@ ISR(TWI_vect){
 			break;
 			
 		case 0x80:	//Datos recibido, ACK enviado
+			Estado_motorDC = TWDR;  // Leer dato
+			I2C_Slave_DataReady = 1;        // Bandera
+			TWCR |= (1<<TWINT);             // ACK siguiente
+		
 		case 0x90:	//Dato recibido General Call, ACK enviado
 			buffer=TWDR; //si se recibe un 'R' en eel buffer hacer un toggle en el PB5
 			TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWIE)|(1<<TWEA);

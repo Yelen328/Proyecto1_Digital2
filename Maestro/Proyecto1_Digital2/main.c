@@ -13,6 +13,7 @@
 
 #include "I2C/I2C.h"
 #include "UART/UART.h"
+#include "LCD/LDC.h"
 //#include "sTemperatura/sTemperatura.h"
 
 //Definición de direcciones 
@@ -54,11 +55,29 @@ uint16_t lectura_LM75 = 0;
 int main(void)
 {
    setup();
+   Lcd_Clear();  // Limpiar pantalla
+   //establecer el encabezado de las etiquetas
+   /*
+   Mover_puntero(0, 1);
+   LCD_Write_string("Temp");
+   Mover_puntero(8, 1);
+   LCD_Write_string("AC");
+   Mover_puntero(12, 1);
+   LCD_Write_string("Door");*/
    char mensaje_serial[50];
    char buffer_sensor[50];
+   WriteChar('a');
     while (1) 
     {
+		  //Mover_puntero(0, 1);
+		 // LCD_Write_string("S1");
 		//Preparar el slave 1
+		 Mover_puntero(0, 1);
+		 LCD_Write_string("Temp");
+		 Mover_puntero(0, 8);
+		 LCD_Write_string("AC");
+		 Mover_puntero(0, 12);
+		 LCD_Write_string("Door");
 		if (!I2C_Start()) return 0;	// Iniciar el start, si no hay ningun problema, continua
 		
 		if (!I2C_Master_write(slave1W))	//si no devuelve 1 para la comunicación
@@ -83,9 +102,18 @@ int main(void)
 		
 		I2C_Master_read(&bufferI2CS1,0);	//NACK
 		I2C_Master_stop();
+	
+		if (bufferI2CS1==1)
+		{
+			Mover_puntero(1,8);
+			 LCD_Write_string("OK_");
+		}
+		else
+		{
+			Mover_puntero(1,8);
+			 LCD_Write_string("DEN");
+		}
 		
-		sprintf(mensaje_serial, "Dato recibido del Esclavo 1: %d\r\n", bufferI2CS1);
-		writeString(mensaje_serial);
 		
 		
 		
@@ -120,21 +148,35 @@ int main(void)
 		
 		I2C_Master_read(&bufferI2CS2,0);	//NACK
 		I2C_Master_stop();
+
+		//Imprime el estado de la puerta
+		if (bufferI2CS2==1)
+		{	
+			Mover_puntero(1,14);
+			LCD_Write_string("A");
+		}
+		
+		else{
+			Mover_puntero(1,14);
+			LCD_Write_string("C");
+		}
 		
 		sprintf(mensaje_serial, "Dato recibido del Esclavo 2: %d\r\n", bufferI2CS2);
 		writeString(mensaje_serial);
 		
 		
-		
-		
 		//LEER ESCLAVO sensor de temperatura	
-		
 		//Lectura de S3 - Sensor de temperatura
+		
+		//LDC_CURSOR(2,1);	//Setear el cursor para la primera columna segunda fila
+		//LDC_write_string("TEMP:");
+		
 		if(leer_LM75()){
 			PINC |= (1<<PINC3);
 			lectura_LM75 = obtenerTemperatura();
-			
-			sprintf(buffer_sensor, "Temperatura: %.d\r\n", lectura_LM75);
+			Mover_puntero(1,1);
+			sprintf(buffer_sensor, " %.d C", lectura_LM75);
+			LCD_Write_string(buffer_sensor);
 			writeString(buffer_sensor);
 			
 		}
@@ -144,7 +186,10 @@ int main(void)
 		
 		
 		_delay_ms(1);
-		if (lectura_LM75 >= 23)
+		
+		
+		//DATOS A ENVIAR AL ESCLAVO 2
+		if (lectura_LM75 >= 25)
 		{
 			estado_motor_DC=1;
 			//PORTB |= (1<<PB0);   // Motor ON
@@ -164,7 +209,17 @@ void setup(){
 	cli();	
 	I2C_Master_Init(100000,1);
 	INIT_UART(103);
-	
+	//configurar puerto D y B
+		//configurar puerto D y B
+		DDRD |= (1<<PD2)|(1<<PD3)|(1<<PD4)|(1<<PD5)|(1<<PD6)|(1<<PD7);
+		DDRB |= (1<<PB0)|(1<<PB1);
+		PORTD &= ~((1<<PD2)|(1<<PD3)|(1<<PD4)|(1<<PD5)|(1<<PD6)|(1<<PD7));
+		PORTB &= ~((1<<PB0)|(1<<PB1));
+		//configuración del puerto C
+		DDRC |= (1<<PC0)|(1<<PC1);	//Salidas y el resto como entradas
+		PORTC &= ~((1<<PC0)|(1<<PC1));
+	inicio8(); 
+	Lcd_Clear();
 	sei();
 }
 

@@ -1,157 +1,101 @@
 /*
- * LDC.c
- *Descripción: Esta librería tiene el fin de facilitar la 
- representación de datos en una pantalla LDC, para la realización
- de la misma se tomó como base el ejemplo visto en clase.
- * Created: 27/1/2026 01:50:49
- *  Author: yelen
+ * LCD8.c
+ *
+ * Created: 27/01/2026 15:43:53
+ *  Author: Lenovo
  */ 
 
 #include "LDC.h"
+//#define F_CPU 16000000
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+void enviar_dato(uint8_t data)
+{
+	// Limpiar primero los bits usados
+	PORTD &= ~((1<<PD2)|(1<<PD3)|(1<<PD4)|(1<<PD5)|(1<<PD6)|(1<<PD7));
+	PORTB &= ~((1<<PB0)|(1<<PB1));
 
-//Función para inicializar LDC 
-void initLDC8(void){
-	//SALIDAS
-	DDRD |= (1<<DDD2)|(1<<DDD3)|(1<<DDD4)|(1<<DDD5)|(1<<DDD6)|(1<<DDD7);	//declarar el puerto B como salidas
-	PORTD = 0x00;	//Estado inicial apagado
-	
-	DDRB |= (1<<DDB3)|(1<<DDB2)|(1<<DDB4)|(1<<DDB5);	//Declarar los bits 2 y 3 del puerto B como salida
-	PORTB = 0x00;	//Inicialmente apagado
-	
-	LDC_port(0x00);	//puerto inicialmente en 0
-	_delay_ms(20);	//esperar 20ms
-	/*LDC_CMD(0x30);
-	_delay_ms(5);
+	//Linpiar los primeros dos bits y desplazarlos para solo mostrar del D2 al D7
+	PORTD |= ((data & 0x3F) << 2);
 
-	LDC_CMD(0x30);
-	_delay_ms(5);
-
-	LDC_CMD(0x30);
-	_delay_ms(10);	//configurarlo en 8 bit*/
-	
-	//FUNCTION SET
-	LDC_CMD(0x38);	// -> configurado en 2 lineas y de 5x8 pixeles
-	
-	//DISPLAY ON//OF
-	LDC_CMD(0x0C);	//Dispay ENCIENDE
-	
-	//CLEAR DISPLAY
-	LDC_CMD(0x01);
-	
-	//Entry mode
-	LDC_CMD(0x06);
-} 
-
-
-//Función para enviar un comando
-void LDC_CMD(char a){
-	//RS=0; 
-	PORTB &= ~(1<<PORTB3);
-	LDC_port(a);
-	
-	//EN=1
-	PORTB |= (1<<PORTB2);
-	_delay_ms(1);
-	
-	//EN=0
-	PORTB &= ~(1<<PORTB2);
+	//Los dos bits más significativos se guardan y se muestran en el puerto B
+	PORTB |= (data >> 6) & 0x03;
 }
-
-
-//Función para colocar en el puerto un valor
-void LDC_port(uint8_t valor){
-	if (valor & 1)
-	//B5 ==1;	bit0
-	PORTB |= (1<<PORTB5);
-	else 
-	PORTB &= ~(1<<PORTB5); 
-	
-	if (valor & 2)
-	//B4 ==1;	bit1
-	PORTB |= (1<<PORTB4);
-	else
-	PORTB &= ~(1<<PORTB4);
-	
-	if (valor & 4)
-	//D2 ==1;	bit2
-	PORTD |= (1<<PORTD2);
-	else
-	PORTD &= ~(1<<PORTD2);
-	
-	if (valor & 8)
-	//D3 ==1;	bit3
-	PORTD |= (1<<PORTD3);
-	else
-	PORTD &= ~(1<<PORTD3);
-	
-	if (valor & 16)
-	//D4 ==1;	bit4
-	PORTD |= (1<<PORTD4);
-	else
-	PORTD &= ~(1<<PORTD4);
-	
-	if (valor & 32)
-	//D5 ==1;	bit5
-	PORTD |= (1<<PORTD5);
-	else
-	PORTD &= ~(1<<PORTD5);
-	
-	if (valor & 64)
-	//D6 ==1;	bit6
-	PORTD |= (1<<PORTD6);
-	else
-	PORTD &= ~(1<<PORTD6);
-	
-	if (valor & 128)
-	//D7 ==1;	bit7
-	PORTD |= (1<<PORTD7);
-	else
-	PORTD &= ~(1<<PORTD7);
+//funcion para enviar un comando
+void LCD_CDM(char a)
+{
+	PORTC &= ~(1<<PORTC0);  //RS = 0, se le indica que es modo comando
+	enviar_dato(a);
+	PORTC |= (1<<PORTC1);    // E = 1, se le indica que envie los datos
+	_delay_ms(2);
+	PORTC &= ~(1<<PORTC1);   // E = 0,  se le indica que se cierra el envio de datos
+	_delay_ms(2);
 }
+void inicio8(void)
+{
+	// Limpiar primero los bits usados
+	PORTD &= ~((1<<PD2)|(1<<PD3)|(1<<PD4)|(1<<PD5)|(1<<PD6)|(1<<PD7));
+	PORTB &= ~((1<<PB0)|(1<<PB1));
+	_delay_ms(20); 
+	LCD_CDM(0x30);
+	_delay_ms(5);
+	LCD_CDM(0x30);
+	_delay_ms(5);
+	LCD_CDM(0x30);
+	_delay_ms(10);
 
- //Función para enviar un carácter
- void LDC_write_char(char caracter){
-	 //RS=1;
-	 PORTB |= (1<<PORTB3);
-	 LDC_port(caracter);
-	 //transición de 1 a 0 en enable para lograr capturar el dato 
-	 PORTB |= (1<< PORTB2);
-	 _delay_ms(4);
-	 PORTB &= ~(1<<PORTB2);
-	 _delay_us(100);
- }
- 
- //Fución para enviar una cadena
- void LDC_write_string(char *cadena){
-	 int i;
-	 for (i=0; cadena[i] != '\0'; i++)
-	 LDC_write_char(cadena[i]);
- }
- 
- // Desplazamiento a la derecha
- void LDC_Desplazamiento_derecha(void){
-	 LDC_CMD(0x1C);
- }
- 
- //Desplazamiento a la izquierda
- void LDC_Desplazamiento_izquierda(void){
-	 LDC_CMD(0x18);
- }
- 
- //Establecer cursor
- void LDC_CURSOR(char c, char f){
-	 char temp;
-	 if (f==1){
-		 temp=0x80+c-1;
-		 LDC_CMD(temp);
- }
-	else if (f==2)
-	{
-		temp=0xC0+c-1;
-		LDC_CMD(temp);
+	
+	//function Set 
+	LCD_CDM(0x38);
+	//Display ON/OF
+	LCD_CDM(0X0C);
+	//entry mode 
+	LCD_CDM(0x01);
+	LCD_CDM(0x06);
+	
+	
+}
+void LCD_Write_Char(char c)
+{
+	PORTC |= (1<<PORTC0);  //RS = 1, Para mandar el caracter
+	enviar_dato(c);
+	PORTC |= (1<<PORTC1);    // E = 1, se le indica que envie los datos
+	_delay_ms(2);
+	PORTC &= ~(1<<PORTC1);   // E = 0,  se le indica que se cierra el envio de datos
+	_delay_ms(2);
+}
+void Mover_puntero(char a, char b)
+{
+	char temp; 
+	if(a == 0){
+	temp = 0x80 + b-1;  //Posicionarse en la linea 1 y se suma la columna
+	LCD_CDM(temp);
 	}
- }
+	else if(a == 1){
+	temp=0xC0 + b-1;  //Posicionarse en la linea 2  y se suma la columna
+	LCD_CDM(temp);
+	}
+}
+void LCD_Write_string(char *a)
+{
+	int i; 
+	for(i=0; a[i] != '\0'; i++)
+	{ //recorrer el puntero caracter por caracter hasta que este vacío
+	LCD_Write_Char(a[i]); 
+	}
+}
+void Lcd_Shift_Right() //Activa el corrimiento hacia la derecha
+{
+	LCD_CDM(0x1C);    
+}
 
-
-
-
+void Lcd_Shift_Left()    //Activa el corrimiento hacia la izquierda
+{
+	LCD_CDM(0x18); 
+}
+//limpiar la LCD
+void Lcd_Clear()    
+{
+	LCD_CDM(1);  
+}

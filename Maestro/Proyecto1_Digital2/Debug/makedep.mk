@@ -6,6 +6,8 @@ ADC\ADC.c
 
 I2C\I2C.c
 
+LCD\LDC.c
+
 main.c
 
 UART\UART.c

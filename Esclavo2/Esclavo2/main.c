@@ -33,8 +33,13 @@ Ultrasonico sensor1; //declarando el puntero de la librería
 uint16_t distancia_s1;
 uint8_t distancia_map_s1;
 uint8_t Lec_ADC=0;
+uint8_t Estado_servomotor=0;
+volatile uint8_t byte_count = 0;
+volatile uint8_t Estado_motorDC = 0;
 
-volatile uint8_t Estado_motorDC;
+
+
+
 volatile uint8_t I2C_Slave_DataReady = 0;
 char bufferUART[50];  // Buffer para imprimir por UART
 /************************Prototipos de funciones ***************************/
@@ -50,6 +55,7 @@ int main(void)
 	_delay_ms(1000);
  
     while (1) 
+	
     {
 		if (buffer=='R'){	//Si se recibe R
 			if (ultrasonico_lectura_disponible(&sensor1)) {
@@ -65,9 +71,11 @@ int main(void)
 				if (distancia_s1 < 10) {
 					UART_writeString("LED ENCENDIDO - Objeto cerca!\r\n");
 					Servo_setPosition(1);
+					Estado_servomotor=1;
 					} else {
 					UART_writeString("LED APAGADO - Objeto lejos\r\n");
 					Servo_setPosition(0);
+					Estado_servomotor=0;
 				}
 				
 				// Reiniciar para siguiente medición
@@ -79,18 +87,19 @@ int main(void)
 			_delay_ms(1);
 			if (Estado_motorDC==1)
 			{
-				PORTB |= (1<<PB0);   // Motor ON
+				PORTB |= (1<<PB1);   // Motor ON
 			}
 			else
 			{
-				PORTB &= ~(1<<PB0);  // Motor OFF
+				PORTB &= ~(1<<PB1);  // Motor OFF
 			}
 		}
 			
 			buffer=0;
 			}	//limpiar buffer para que se haga una vez cuando se le mande la información
 			
-			
+		UART_writeString("temp");
+		sprintf(bufferUART, "Temperatura maestro %u\r\n", Estado_motorDC);
 		_delay_ms(100);
     }
 
@@ -101,9 +110,9 @@ int main(void)
 void setup()
 {
 	cli();
-	DDRB |= (1 << PB0);
-	DDRB |= (1<<PB1);   // IN1 salida
-	PORTB &= ~(1 << PB0);
+	DDRB |= (1 << PB1);
+	//DDRB |= (1<<PB1);   // IN1 salida
+	PORTB &= ~(1 << PB1);
 	
 	ServoTimer2_init();
 	UART_init(103);
@@ -163,9 +172,17 @@ ISR(TWI_vect){
 			break;
 			
 		case 0x80:	//Datos recibido, ACK enviado
-			Estado_motorDC = TWDR;  // Leer dato
-			I2C_Slave_DataReady = 1;        // Bandera
-			TWCR |= (1<<TWINT);             // ACK siguiente
+			if(byte_count == 0){
+				Estado_motorDC = TWDR;   // Primer byte recibido
+				byte_count++;
+			}
+			else{
+				buffer = TWDR;           // Segundo byte recibido (ej: 'R')
+				byte_count = 0;
+			}
+
+			TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWIE)|(1<<TWEA);
+			break;
 		
 		case 0x90:	//Dato recibido General Call, ACK enviado
 			buffer=TWDR; //si se recibe un 'R' en eel buffer hacer un toggle en el PB5
@@ -176,7 +193,7 @@ ISR(TWI_vect){
 		
 		case 0xA8:	//Dirección recibida para ser leído
 		case 0xB8: //Dato transmitido, ACK recibido
-			TWDR = distancia_s1;	//Datos a enviar, se enviará 2 para confirmar comunicación con el mastro. 
+			TWDR = Estado_servomotor;	//Datos a enviar, se enviará 2 para confirmar comunicación con el mastro. 
 			TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWIE)|(1<<TWEA);
 			break;
 			
@@ -187,6 +204,7 @@ ISR(TWI_vect){
 			break;
 			
 		case 0xA0: //Stop o repeated star recibido como slave
+			byte_count = 0;
 			TWCR=(1<<TWINT)|(1<<TWEN)|(1<<TWIE)|(1<<TWEA);
 			break;
 			

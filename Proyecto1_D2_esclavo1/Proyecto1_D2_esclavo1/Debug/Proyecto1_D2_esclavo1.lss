@@ -780,12 +780,12 @@ int main(void)
  3c2:	95 40       	sbci	r25, 0x05	; 5
  3c4:	5c f0       	brlt	.+22     	; 0x3dc <main+0xd8>
 			//writeString("ROJO \r\n");				// muestra texto
-			mover_motor(1,1);
+			mover_motor(3,1);
  3c6:	41 e0       	ldi	r20, 0x01	; 1
  3c8:	60 e0       	ldi	r22, 0x00	; 0
  3ca:	70 e0       	ldi	r23, 0x00	; 0
- 3cc:	80 e8       	ldi	r24, 0x80	; 128
- 3ce:	9f e3       	ldi	r25, 0x3F	; 63
+ 3cc:	80 e4       	ldi	r24, 0x40	; 64
+ 3ce:	90 e4       	ldi	r25, 0x40	; 64
  3d0:	0e 94 50 01 	call	0x2a0	; 0x2a0 <mover_motor>
 			color_detectado=1;
  3d4:	81 e0       	ldi	r24, 0x01	; 1

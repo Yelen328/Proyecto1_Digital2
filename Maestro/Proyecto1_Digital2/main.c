@@ -37,7 +37,10 @@ uint8_t bufferI2CS1=0;
 uint8_t bufferI2CS2=0;
 uint8_t buffersensor=0;
 uint8_t estado_motor_DC=0;
+volatile uint8_t modo_manual = 0;
 float temperatura=0;
+char tx_buffer[20]; //buffer para la comunicaición de Maestro con el ESPI 
+volatile char comando_recibido = 0;
 
 void setup();
 void refreshPORT(uint8_t VALOR);
@@ -161,8 +164,8 @@ int main(void)
 			LCD_Write_string("C");
 		}
 		
-		sprintf(mensaje_serial, "Dato recibido del Esclavo 2: %d\r\n", bufferI2CS2);
-		writeString(mensaje_serial);
+		//sprintf(mensaje_serial, "Dato recibido del Esclavo 2: %d\r\n", bufferI2CS2);
+		//writeString(mensaje_serial);
 		
 		
 		//LEER ESCLAVO sensor de temperatura	
@@ -177,11 +180,11 @@ int main(void)
 			Mover_puntero(1,1);
 			sprintf(buffer_sensor, " %.d C", lectura_LM75);
 			LCD_Write_string(buffer_sensor);
-			writeString(buffer_sensor);
+			//writeString(buffer_sensor);
 			
 		}
 		else {
-			writeString("Lectura de sensor I2C fallo\n");
+			//writeString("Lectura de sensor I2C fallo\n");
 		}
 		
 		
@@ -189,15 +192,51 @@ int main(void)
 		
 		
 		//DATOS A ENVIAR AL ESCLAVO 2
-		if (lectura_LM75 >= 25)
+		if (modo_manual == 0)   // SOLO automático
 		{
-			estado_motor_DC=1;
-			//PORTB |= (1<<PB0);   // Motor ON
+			if (lectura_LM75 >= 25)
+			estado_motor_DC = 1;
+			else
+			estado_motor_DC = 0;
 		}
-		else
+		/*****************Codigo de comunicación con la ESPI32******************************/
+		// TEMPERATURA (solo 2 dígitos)
+		uint8_t temp_entero = (uint8_t)obtenerTemperatura();
+		if (temp_entero > 99) temp_entero = 99;
+
+		sprintf(tx_buffer, "T:%02d\n", lectura_LM75);
+		writeString(tx_buffer);
+
+		// PUERTA (ultrasónico)
+		uint8_t puerta_estado = (bufferI2CS2 == 1) ? 1 : 0;
+		sprintf(tx_buffer, "P:%d\n", puerta_estado);
+		writeString(tx_buffer);
+
+		// ACCESO (sensor color)
+		uint8_t acceso_estado = (bufferI2CS1 == 1) ? 1 : 0;
+		sprintf(tx_buffer, "A:%d\n", acceso_estado);
+		writeString(tx_buffer);
+		/******* Recibir comandos de la ESPI32***********/
+		
+		if (comando_recibido != 0)
 		{
-			estado_motor_DC=0;
-			//PORTB &= ~(1<<PB0);  // Motor OFF
+			if (comando_recibido == 'M') {
+				modo_manual = 1;
+			}
+
+			if (comando_recibido == 'S') {
+				modo_manual = 0;
+			}
+
+			if (modo_manual == 1) {
+				if (comando_recibido == 'E')
+				estado_motor_DC = 1;
+
+				if (comando_recibido == 'A')
+				estado_motor_DC = 0;
+			}
+
+			comando_recibido = 0;
 		}
 		
 		_delay_ms(500);
@@ -302,4 +341,7 @@ float obtenerTemperatura(void)
 	return temp * 0.5;
 }
 
-
+ISR(USART_RX_vect)
+{
+	comando_recibido = UDR0;
+}

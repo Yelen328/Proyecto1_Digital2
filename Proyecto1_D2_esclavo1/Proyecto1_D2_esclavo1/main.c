@@ -81,7 +81,7 @@ int main(void)
 			
 		if ( rojo >1500 ){		// si valores dentro del rango
 			//writeString("ROJO \r\n");				// muestra texto
-			mover_motor(1,1);
+			mover_motor(3,1);
 			color_detectado=1;
 		}
 		else {	// si valores dentro del rango
